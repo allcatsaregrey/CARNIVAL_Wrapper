@@ -1,7 +1,7 @@
 # Authors: TJ McColl, Matthew McFee
 # A simple set of functions to generate prior knowledge networks using the
-# OmnipathDB web database interface. This is mostly adapted form the examples
-# provided by the Saez lab group.
+# OmnipathDB web database interface and then perform CARNIVAL analysis with said 
+# PKN. This is mostly adapted form the examples provided by the Saez lab group.
 
 # Library imports
 req_pac <- c("dplyr", "ggplot2", "OmnipathR", "igraph", "ggraph", "GGally", 
@@ -29,7 +29,7 @@ gen_pkn <- function(user_net, sources, targets) {
   
   for(source in 1:length(sources)){
     
-    paths <- shortest_paths(user_net, from = sources[[source]],
+    paths <- all_shortest_paths(user_net, from = sources[[source]],
                             to = targets,
                             output = 'vpath')
     path_nodes <- lapply(paths$vpath,names) %>% unlist() %>% unique()
@@ -69,13 +69,17 @@ ggnet2(user_graph, label=TRUE)
 }
 
 # Process the network for input into CARNIVAL (ie. convert an igraph object
-# to an appropriate dataframe)
-process_net <- function() {
+# to an appropriate data frame)
+process_net <- function(user_graph) {
   
+  # Convert the graph into a data frame for manipulation
+  conv_graph <- as_data_frame(user_graph) %>% 
+    select(c("from", "to", "consensus_direction")) %>%
+    rename(from = Source, consensus_direction = Effect, to = Target)
 }
 
 # Read in appropriate data 
-read_user_data <- function(user_measure, user_input) {
+read_user_data <- function() {
   
   user_measure <- read_csv(file.choose())
   user_input <- read_csv(file.choose())
