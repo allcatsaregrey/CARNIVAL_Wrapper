@@ -3,6 +3,9 @@
 # OmnipathDB web database interface and then perform CARNIVAL analysis with said 
 # PKN. This is mostly adapted form the examples provided by the Saez lab group.
 
+# TODO: Streamline adding network infromation for nodes that do not exist in
+# the OmnipathDB network.
+
 # Library imports
 req_pac <- c("dplyr", "ggplot2", "OmnipathR", "igraph", "ggraph", "GGally", 
              "CARNIVAL", "Rgraphviz")
@@ -23,15 +26,47 @@ print_interactions(head(interactions, n))
   
 }
 
+check_exist <- function(user_net, sources, targets) {
+  
+  # Check if the nodes exist 
+  sources_res <- sources %in% name(V(user_net))
+  targets_res <- targets %in% name(V(uset_net))
+  
+  c(sources_res, targets_res)
+  
+}
+
+remove_nonexist <- function(sources, targets, src_nonexist, 
+                            trgt_nonexist) {
+  
+  # Find indices of nodes that exist in the user_net
+  indx_src <- which(src_nonexist, arr.ind = FALSE, useNames = TRUE)
+  indx_trg <- which(trg_nonexist, arr.ind = FALSE, useNames = TRUE)
+  
+  # Select only existent nodes
+  
+  sources <- sources[indx_src]
+  targets <- targets[indx_trg]
+  
+  c(sources, targets)
+  
+}
+
 gen_pkn <- function(user_net, sources, targets) {
+  
+  # Remove non-existent nodes before generating the paths
+  existance_res <- check_exist(user_net, sources, targets)
+  pruned_src_trg <- remove_nonexist(sources, targets, existance_res[1],
+                                    existance_res[2])
+  sources <- pruned_src_trg[1]
+  targets <- pruned_src_trg[2]
   
   collected_path_nodes = list()
   
   for(source in 1:length(sources)){
     
     paths <- all_shortest_paths(user_net, from = sources[[source]],
-                            to = targets,
-                            output = 'vpath')
+                            to = targets)
     path_nodes <- lapply(paths$vpath,names) %>% unlist() %>% unique()
     collected_path_nodes[[source]] <- path_nodes
     
