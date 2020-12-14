@@ -53,7 +53,8 @@ proc_data <- function(find_weights = FALSE) {
   tf_activities <- run_viper(dor_dat, regulons, 
                              options =  list(method = "scale", minsize = 4, 
                                              eset.filter = FALSE, cores = 1, 
-                                             verbose = FALSE))
+                                             verbose = FALSE)) %>% 
+    as(tf_activities, "data.frame")
   
   # Bulk RNAseq data processing for PROGENy
   # Import data to DESeq2 and variance stabilize
@@ -94,27 +95,11 @@ proc_data <- function(find_weights = FALSE) {
   
 }
 
-check_exist <- function(user_net, sources, targets) {
+remove_nonexist <- function(user_net, sources, targets) {
   
-  # Check if the nodes exist 
-  sources_res <- sources %in% name(V(user_net))
-  targets_res <- targets %in% name(V(uset_net))
-  
-  c(sources_res, targets_res)
-  
-}
-
-remove_nonexist <- function(sources, targets, src_nonexist, 
-                            trgt_nonexist) {
-  
-  # Find indices of nodes that exist in the user_net
-  indx_src <- which(src_nonexist, arr.ind = FALSE, useNames = TRUE)
-  indx_trg <- which(trg_nonexist, arr.ind = FALSE, useNames = TRUE)
-  
-  # Select only existent nodes
-  
-  sources <- sources[indx_src]
-  targets <- targets[indx_trg]
+  # L[!(L %in% L1)]
+  sources <- sources[sources %in% as_ids(V(user_net))]
+  targets <- targets[targets %in% as_ids(V(user_net))]
   
   c(sources, targets)
   
@@ -123,9 +108,7 @@ remove_nonexist <- function(sources, targets, src_nonexist,
 gen_pkn <- function(user_net, sources, targets) {
   
   # Remove non-existent nodes before generating the paths
-  existance_res <- check_exist(user_net, sources, targets)
-  pruned_src_trg <- remove_nonexist(sources, targets, existance_res[1],
-                                    existance_res[2])
+  pruned_src_trg <- remove_nonexist(user_net, sources, targets)
   sources <- pruned_src_trg[1]
   targets <- pruned_src_trg[2]
   
@@ -133,8 +116,8 @@ gen_pkn <- function(user_net, sources, targets) {
   
   for(source in 1:length(sources)){
     
-    paths <- all_shortest_paths(user_net, from = sources[[source]],
-                            to = targets)
+    paths <- shortest_paths(user_net, from = sources[[source]],
+                            to = targets, output = 'vpath')
     path_nodes <- lapply(paths$vpath,names) %>% unlist() %>% unique()
     collected_path_nodes[[source]] <- path_nodes
     
@@ -189,7 +172,7 @@ carn_pkn <- function(user_net, user_measure, user_weight = NULL) {
 }
 
 # Custom visualization for CARNIVAL results
-vis_carn <- function(result) {
+alt_vis_carn <- function(result) {
   
   # Prepare the result data for plotting
   user_res <- result$weightedSIF
