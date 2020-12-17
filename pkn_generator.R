@@ -10,7 +10,7 @@
 # Library imports
 req_pac <- c("dplyr", "ggplot2", "OmnipathR", "igraph", "ggraph", "GGally", 
              "CARNIVAL", "Rgraphviz", "dorothea", "progeny", "viper", "Seurat",
-             "tcltk", "biomaRt")
+             "tcltk", "biomaRt", "tidyverse")
 
 # Force package install
 for (pac in req_pac) {
@@ -25,7 +25,7 @@ lapply(req_pac, require, character.only = TRUE)
 
 init_net <- function(sources){
   
-interactions <- import_omnipath_interactions(filter_databases = sources)
+interactions <- import_omnipath_interactions(resources = sources)
 user_net <-  interaction_graph(interactions = interactions)
 
 }
@@ -101,7 +101,7 @@ remove_nonexist <- function(user_net, sources, targets) {
   sources <- sources[sources %in% as_ids(V(user_net))]
   targets <- targets[targets %in% as_ids(V(user_net))]
   
-  c(sources, targets)
+  list(sources, targets)
   
 }
 
@@ -109,18 +109,18 @@ gen_pkn <- function(user_net, sources, targets) {
   
   # Remove non-existent nodes before generating the paths
   pruned_src_trg <- remove_nonexist(user_net, sources, targets)
-  sources <- pruned_src_trg[1]
-  targets <- pruned_src_trg[2]
+  sources <- pruned_src_trg[[1]]
+  targets <- pruned_src_trg[[2]]
   
   collected_path_nodes = list()
   
   for(source in 1:length(sources)){
     
     paths <- shortest_paths(user_net, from = sources[[source]],
-                            to = targets, output = 'vpath')
+                            to = targets,
+                            output = 'vpath')
     path_nodes <- lapply(paths$vpath,names) %>% unlist() %>% unique()
     collected_path_nodes[[source]] <- path_nodes
-    
   }
   
   collected_path_nodes <- unlist(collected_path_nodes) %>% unique()
