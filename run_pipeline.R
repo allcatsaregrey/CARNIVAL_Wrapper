@@ -9,7 +9,7 @@ runPipeline <- function(net_sources, sources, targets) {
   user_pkn <- gen_pkn(user_net, sources, targets) %>% process_net()
   
   # Run CARNIVAL and display the resultant network
-  result <- carn_pkn(user_net, user_data[1], user_data[2])
+  result <- carn_pkn(user_net, user_data[[1]], user_data[[2]])
   vis_carn(result) 
   
 }

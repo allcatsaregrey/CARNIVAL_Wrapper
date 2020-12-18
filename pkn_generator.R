@@ -4,18 +4,18 @@
 # PKN. This is mostly adapted form the examples provided by the Saez lab group.
 
 # TODO: Streamline adding network information for nodes that do not exist in
-# the OmnipathDB network. Format DoRothEA and PROGENy data so they run with the
-# CARNIVAL pipeline.
+# the OmnipathDB network. Add a function to visualize graph networks in 3D and 
+# function to look at subgraphs of generated PKNs in 2D. 
 
 # Library imports
 req_pac <- c("dplyr", "ggplot2", "OmnipathR", "igraph", "ggraph", "GGally", 
              "CARNIVAL", "Rgraphviz", "dorothea", "progeny", "viper", "Seurat",
-             "tcltk", "biomaRt", "tidyverse")
+             "tcltk", "biomaRt", "tidyverse", "GEOquery")
 
 # Force package install
 for (pac in req_pac) {
-  if(!pac %in% installed.packages()) {
-    install.packages(i, dependencies = TRUE)
+  if(! pac %in% installed.packages()) {
+    install.packages(pac, dependencies = TRUE)
   }
 }
 
