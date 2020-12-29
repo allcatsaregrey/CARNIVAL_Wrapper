@@ -9,8 +9,10 @@
 
 # Library imports
 req_pac <- c("dplyr", "ggplot2", "OmnipathR", "igraph", "ggraph", "GGally", 
-             "CARNIVAL", "Rgraphviz", "dorothea", "progeny", "viper", "Seurat",
-             "tcltk", "biomaRt", "tidyverse", "GEOquery")
+             "tidyverse", "BiocManager")
+
+bioc_pac <- c("Rgraphviz", "dorothea", "progeny", "viper", "Seurat", "biomaRt",
+              "GEOquery", "CARNIVAL")
 
 # Force package install
 for (pac in req_pac) {
@@ -19,6 +21,15 @@ for (pac in req_pac) {
   }
 }
 
+# Force package install from Bioconductor
+for (pac in bioc_pac) {
+  if(! pac %in% installed.packages()) {
+    BiocManager::install(pac)
+  }
+}
+
+# Load necessary libraries
+req_pac <- c(req_pac, bioc_pac)
 lapply(req_pac, require, character.only = TRUE)
 
 # click on the 'interactions' variable to view the proteins included
@@ -36,21 +47,16 @@ print_interactions(head(interactions, n))
   
 }
 
-proc_data <- function(find_weights = FALSE) {
+proc_data <- function(geo_id, find_weights = FALSE) {
   
   # See dbellViper via data(bcellViper, package = "bcellViper") for sample 
-  # data format for dor_mat
-  dor_dat <- read_csv(tk_choose.files(caption = "Import data for DoRothEA"))
-  #
-  prog_dat <- read_csv(tk.choose.files(caption = "Import data for PROGENy"))
-  
+  user_dat <- getGEO(geo_id, GSEMatrix = TRUE)
   
   # Select regulons with high confidence values of "A" and "B"
-  regulons <- data(dorothea_hs, package = "dorothea") %>%
-    filter(confidence %in% c("A", "B"))
+  regulons <- data(dorothea_hs) %>% filter(confidence %in% c("A", "B"))
   
   # Bulk RNAseq data can be processed this way
-  tf_activities <- run_viper(dor_dat, regulons, 
+  tf_activities <- run_viper(user_dat, regulons, 
                              options =  list(method = "scale", minsize = 4, 
                                              eset.filter = FALSE, cores = 1, 
                                              verbose = FALSE)) %>% 
@@ -62,7 +68,7 @@ proc_data <- function(find_weights = FALSE) {
   prog_pathways <- list()
   
   if(find_weights == TRUE) {
-    dset <- DESeqDataSetFromMatrix(prog_dat,
+    dset <- DESeqDataSetFromMatrix(user_dat,
                                 colData = as.data.frame(colData(prog_dat)), 
                                 design =~ dex)
     dset <- estimateSizeFactors(dset)
@@ -89,9 +95,8 @@ proc_data <- function(find_weights = FALSE) {
     
   }
   
-  # Process the data for use in CARNIVAL
-  # INCOMPLETE
-  return(tf_activities)
+  # Return the data for use in CARNIVAL
+  list(tf_activities, prog_pathways)
   
 }
 
@@ -184,5 +189,21 @@ alt_vis_carn <- function(result) {
   # Visualize the result
   plot(user_graph, vertex.color = attribs$AvgAct, vertex.frame.color = "Black",
        edge.color = "Black", vertex.size = 50, vertex.label.color = "Black")
+  
+}
+
+
+# Move the wrapper to this file since writing an R package would be overkill
+# in this case 
+runPipeline <- function(net_sources, sources, targets, geo_id) {
+  
+  # Input the data and generate the necessary PKN
+  user_data <- proc_data(geo_id)
+  user_net <- init_net(net_sources) 
+  user_pkn <- gen_pkn(user_net, sources, targets) %>% process_net()
+  
+  # Run CARNIVAL and display the resultant network
+  result <- carn_pkn(user_net, user_data[[1]], user_data[[2]])
+  vis_carn(result) 
   
 }
