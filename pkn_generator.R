@@ -150,11 +150,23 @@ sub_graph <- induced_subgraph(user_graph_undirected,
 
 }
 
-display_graph <- function(user_graph) {
+display_graph <- function(user_graph, source, undir = FALSE) {
+  
+  
 
 # Add user customization options for improved visualization  
-ggnet2(user_graph, label=TRUE)
-
+  if (undir == TRUE) {
+  ggnet2(user_graph, label=TRUE)
+  
+  }  
+  
+  # Set visualization properties
+  V(user_graph)$size <- 10
+  V(user_graph)$frame.color <- "white"
+  V(user_graph)$color <- "orange"
+  
+  l = layout_as_star(user_graph, center = "MTOR")
+  plot(user_graph, layout = l, vertex.label.cex = 0.75)
 }
 
 # Process the network for input into CARNIVAL (ie. convert an igraph object
